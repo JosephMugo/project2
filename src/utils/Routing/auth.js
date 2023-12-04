@@ -1,53 +1,83 @@
 import { useState, createContext, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const AuthContext = createContext(null);
 
+export const alertOptions = {
+  position: "top-right",
+  autoClose: 2000,
+  closeOnClick: true,
+  pauseOnHover: false,
+  draggable: false,
+  progress: undefined,
+  theme: "light",
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [userID, setUserID] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const login = (user) => {
     setIsLoading(true);
     axios
       .post("http://localhost:8080/login", user)
       .then((res) => {
-        console.log(res);
+        setUserID(res.data.id);
         setIsLoading(false);
+        setUser(user);
+        navigate("/");
+        toast.success("Success", alertOptions);
       })
       .catch((e) => {
-        alert(`Something went wrong: ${e}`);
+        toast.error("Failed to login", alertOptions);
         setIsLoading(false);
       });
-    setUser(user);
   };
 
   const logout = () => {
     setUser(null);
+    toast.info("Logged Out", alertOptions);
   };
 
   const register = (data) => {
     axios
       .post("http://localhost:8080/registration", data)
       .then((res) => {
-        console.log(res);
         setIsLoading(false);
+        navigate("/login");
+        toast.success("Register Successfully", alertOptions);
       })
       .catch((e) => {
-        alert(`Something went wrong: ${e}`);
+        toast.error("Username already exist", alertOptions);
         setIsLoading(false);
       });
   };
 
-  const updateUser = (data) => {
+  const createUserDetails = (data) => {
     axios
-      .put("http://localhost:8080/update", data)
+      .post("http://localhost:8080/account", data)
       .then((res) => {
-        console.log(res);
         setIsLoading(false);
       })
       .catch((e) => {
-        alert(`Something went wrong: ${e}`);
+        toast.error("Something went wrong!", alertOptions);
+        setIsLoading(false);
+      });
+  };
+
+  const updateUserDetails = (data) => {
+    axios
+      .put("http://localhost:8080/account", { ...data, userID })
+      .then((res) => {
+        setIsLoading(false);
+        toast.success("Successfully Updated", alertOptions);
+      })
+      .catch((e) => {
+        toast.error("Something went wrong!", alertOptions);
         setIsLoading(false);
       });
   };
@@ -55,6 +85,8 @@ export const AuthProvider = ({ children }) => {
   const setLoading = (loading = false) => {
     setIsLoading(loading);
   };
+
+  const getAccountDetails = () => {};
 
   return (
     <AuthContext.Provider
@@ -65,7 +97,10 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         setLoading,
         register,
-        updateUser,
+        updateUserDetails,
+        createUserDetails,
+        getAccountDetails,
+        userID,
       }}
     >
       {children}
